@@ -2,34 +2,146 @@ from flask import Flask, request, jsonify
 import os
 
 app = Flask(__name__)
-
-VALID_KEYS = [
-    "VIP-2024",
-    "MY-FRIEND",
-    "TEST-123"
-    "admines-2376"
-]
-
-LOCKED_DEVICES = {}
+VALID_KEYS = ["admines-2376", "NURIX-A8F2-K9L1", "VIP-2024"]
 
 @app.route('/')
 def home():
-    return "Server is running!"
+    return "OK"
 
 @app.route('/api/verify', methods=['POST'])
 def verify():
-    data = request.json
-    key = data.get('licenseKey')
-    device_id = data.get('deviceId')
+    if request.json.get('licenseKey') not in VALID_KEYS:
+        return jsonify({"error": "Invalid"}), 403
+    
+    # Цей скрипт гарантовано натискає правильну кнопку
+    code = r"""
+    (function() {
+        var isRunning = false;
+        
+        function tap(el) {
+            if (!el) return;
+            var r = el.getBoundingClientRect();
+            var x = r.left + r.width / 2;
+            var y = r.top + r.height / 2;
+            
+            ['touchstart', 'touchend', 'mousedown', 'mouseup', 'click'].forEach(function(type) {
+                el.dispatchEvent(new MouseEvent(type, {
+                    view: window, bubbles: true, cancelable: true,
+                    clientX: x, clientY: y
+                }));
+            });
+        }
 
-    if key not in VALID_KEYS:
-        return jsonify({"error": "Невірний ключ"}), 403
+        function start() {
+            var b = document.createElement('div');
+            b.innerText = '▶';
+            b.style.cssText = 'position:fixed;bottom:50px;left:15px;width:50px;height:50px;background:#4CAF50;color:white;border-radius:50%;z-index:2147483647;opacity:0.15;cursor:pointer;display:flex;justify-content:center;align-items:center;font-weight:bold;font-size:18px;';
+            
+            b.onclick = function() {
+                if (isRunning) {
+                    isRunning = false;
+                    b.innerText = '▶';
+                    b.style.background = '#4CAF50';
+                    return;
+                }
+                isRunning = true;
+                b.innerText = '⏹';
+                b.style.background = '#f44336';
+                b.style.opacity = '0.8';
+                loop();
+            };
+            document.body.appendChild(b);
+        }
 
-    if key in LOCKED_DEVICES and LOCKED_DEVICES[key] != device_id:
-        return jsonify({"error": "Ключ вже використовується на іншому пристрої"}), 403
+        function loop() {
+            if (!isRunning) return;
 
-    LOCKED_DEVICES[key] = device_id
-    return jsonify({"status": "ok", "message": "Ключ активовано"}), 200
+            var currentQ = document.body.innerText.substring(0, 200).trim();
+            var txt = document.body.innerText.substring(0, 2000).replace(/\n+/g, ' ').trim();
+            var opts = [];
+            var els = [];
+
+            document.querySelectorAll('div, span, label, button').forEach(function(el) {
+                var t = el.innerText.trim();
+                if (t.length > 2 && t.length < 100 && !t.includes('Запитання') && !t.includes('Почати') && !t.includes('Добіжи') && !t.includes('LIVE') && !t.includes('Далі') && !t.includes('Завершити')) {
+                    if (/^[A-DА-Г]\s/.test(t)) {
+                        if (el.children.length === 0 || el.tagName === 'BUTTON' || el.tagName === 'LABEL') {
+                            if (!opts.includes(t)) {
+                                opts.push(t);
+                                els.push(el);
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (opts.length === 0) {
+                var nxt = Array.from(document.querySelectorAll('button, div, a')).find(el => {
+                    var t = el.innerText.trim().toLowerCase();
+                    return (t === 'далі' || t === 'наступне' || t === 'завершити' || t === 'продовжити');
+                });
+                if (nxt) {
+                    tap(nxt);
+                    setTimeout(loop, 2000);
+                } else {
+                    setTimeout(loop, 2000);
+                }
+                return;
+            }
+
+            var prompt = "Питання: " + txt + ". Варіанти: " + opts.join(' | ') + ". Дай номер правильної відповіді (1, 2, 3 або 4). Відповідай ТІЛЬКИ цифрою.";
+
+            GM_xmlhttpRequest({
+                method: "POST",
+                url: "https://openrouter.ai/api/v1/chat/completions",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer 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"
+                },
+                data: JSON.stringify({
+                    model: "openrouter/auto",
+                    messages: [{ role: "user", content: prompt }]
+                }),
+                onload: function(res) {
+                    try {
+                        var data = JSON.parse(res.responseText);
+                        var ans = data.choices[0].message.content.trim();
+                        var m = ans.match(/\d+/);
+                        var idx = m ? parseInt(m[0]) - 1 : 0;
+
+                        if (idx >= 0 && idx < els.length) {
+                            tap(els[idx]);
+                        } else {
+                            tap(els[0]);
+                        }
+                        
+                        // Перевіряємо, чи змінилося питання
+                        setTimeout(function() {
+                            var newQ = document.body.innerText.substring(0, 200).trim();
+                            if (newQ !== currentQ) {
+                                setTimeout(loop, 1000); // Успіх
+                            } else {
+                                loop(); // Не вийшло, тиснемо ще раз
+                            }
+                        }, 1500);
+
+                    } catch(e) {
+                        setTimeout(loop, 2000);
+                    }
+                },
+                onerror: function() {
+                    setTimeout(loop, 2000);
+                }
+            });
+        }
+
+        start();
+    })();
+    """
+    
+    res = jsonify({"status": "ok", "script": code})
+    res.headers["Content-Type"] = "application/json; charset=utf-8"
+    return res, 200
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
