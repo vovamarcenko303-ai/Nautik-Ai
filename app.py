@@ -13,76 +13,26 @@ def verify():
     if request.json.get('licenseKey') not in VALID_KEYS:
         return jsonify({"error": "Invalid"}), 403
     
-    # Оновлений скрипт
     code = r"""
     (function() {
-        var isRunning = false;
+        var b = document.createElement('div');
+        b.innerText = '💡';
+        b.style.cssText = 'position:fixed;bottom:50px;left:15px;width:50px;height:50px;background:#2196F3;color:white;border-radius:50%;z-index:2147483647;opacity:0.6;display:flex;justify-content:center;align-items:center;font-size:24px;';
         
-        function tap(el) {
-            if (!el) return;
-            var r = el.getBoundingClientRect();
-            var x = r.left + r.width / 2;
-            var y = r.top + r.height / 2;
-            ['touchstart', 'touchend', 'mousedown', 'mouseup', 'click'].forEach(function(type) {
-                el.dispatchEvent(new MouseEvent(type, { view: window, bubbles: true, cancelable: true, clientX: x, clientY: y }));
-            });
-        }
-
-        function start() {
-            var b = document.createElement('div');
-            b.innerText = '▶';
-            b.style.cssText = 'position:fixed;bottom:50px;left:15px;width:50px;height:50px;background:#4CAF50;color:white;border-radius:50%;z-index:2147483647;opacity:0.15;cursor:pointer;display:flex;justify-content:center;align-items:center;font-weight:bold;font-size:18px;';
-            
-            b.onclick = function() {
-                if (isRunning) {
-                    isRunning = false;
-                    b.innerText = '▶';
-                    b.style.background = '#4CAF50';
-                    return;
-                }
-                isRunning = true;
-                b.innerText = '⏹';
-                b.style.background = '#f44336';
-                b.style.opacity = '0.8';
-                loop();
-            };
-            document.body.appendChild(b);
-        }
-
-        function loop() {
-            if (!isRunning) return;
-
-            var currentQ = document.body.innerText.substring(0, 200).trim();
+        b.onclick = function() {
+            b.style.opacity = '0.2';
             var txt = document.body.innerText.substring(0, 2000).replace(/\n+/g, ' ').trim();
-            
-            // ШУКАЄМО ВСІ КЛІКАБЕЛЬНІ БЛОКИ
             var opts = [];
             var els = [];
             
             document.querySelectorAll('div, span, label, button').forEach(function(el) {
-                // Перевіряємо, чи елемент має текст і чи він не є частиною питання
                 var t = el.innerText.trim();
                 if (t.length > 5 && t.length < 200 && !t.includes('Запитання') && !t.includes('Почати') && !t.includes('Добіжи') && !t.includes('LIVE') && !t.includes('Далі') && !t.includes('Завершити')) {
-                    // Перевіряємо, чи це блок, який можна натиснути (має обробник подій)
-                    if (el.onclick || el.tagName === 'BUTTON' || el.tagName === 'LABEL' || el.getAttribute('role') === 'button') {
-                        if (!opts.includes(t)) {
-                            opts.push(t);
-                            els.push(el);
-                        }
-                    }
+                    if (!opts.includes(t)) { opts.push(t); els.push(el); }
                 }
             });
 
-            if (opts.length === 0) {
-                // Якщо немає варіантів, шукаємо "Далі"
-                var nxt = Array.from(document.querySelectorAll('button, div, a')).find(el => {
-                    var t = el.innerText.trim().toLowerCase();
-                    return (t === 'далі' || t === 'наступне' || t === 'завершити' || t === 'продовжити');
-                });
-                if (nxt) { tap(nxt); }
-                setTimeout(loop, 2000);
-                return;
-            }
+            if (opts.length === 0) { b.style.opacity = '0.6'; return; }
 
             var prompt = "Питання: " + txt + ". Варіанти: " + opts.join(' | ') + ". Дай номер правильної відповіді (1, 2, 3 або 4). Відповідай ТІЛЬКИ цифрою.";
 
@@ -93,49 +43,28 @@ def verify():
                     "Content-Type": "application/json",
                     "Authorization": "Bearer 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"
                 },
-                data: JSON.stringify({
-                    model: "openrouter/auto",
-                    messages: [{ role: "user", content: prompt }]
-                }),
+                data: JSON.stringify({ model: "openrouter/auto", messages: [{ role: "user", content: prompt }] }),
                 onload: function(res) {
                     try {
                         var data = JSON.parse(res.responseText);
-                        if (data.error) {
-                            alert("Помилка ШІ: " + data.error.message);
-                            isRunning = false;
-                            return;
-                        }
-                        
                         var ans = data.choices[0].message.content.trim();
                         var m = ans.match(/\d+/);
                         var idx = m ? parseInt(m[0]) - 1 : 0;
 
-                        if (idx >= 0 && idx < els.length) {
-                            tap(els[idx]);
-                        } else {
-                            tap(els[0]);
-                        }
-                        
-                        setTimeout(function() {
-                            var newQ = document.body.innerText.substring(0, 200).trim();
-                            if (newQ !== currentQ) {
-                                setTimeout(loop, 1000);
-                            } else {
-                                loop(); // Не вийшло, тиснемо ще раз
-                            }
-                        }, 1500);
+                        els.forEach(function(e) { e.style.backgroundColor = ''; e.style.border = ''; });
 
-                    } catch(e) {
-                        setTimeout(loop, 2000);
-                    }
-                },
-                onerror: function() {
-                    setTimeout(loop, 2000);
+                        if (idx >= 0 && idx < els.length) {
+                            els[idx].style.backgroundColor = '#4CAF50';
+                            els[idx].style.color = '#fff';
+                            els[idx].style.border = '4px solid #2E7D32';
+                            els[idx].style.borderRadius = '10px';
+                        }
+                        b.style.opacity = '0.6';
+                    } catch(e) { b.style.opacity = '0.6'; }
                 }
             });
-        }
-
-        start();
+        };
+        document.body.appendChild(b);
     })();
     """
     
