@@ -13,6 +13,7 @@ def verify():
     if request.json.get('licenseKey') not in VALID_KEYS:
         return jsonify({"error": "Invalid"}), 403
     
+    # Оновлений скрипт
     code = r"""
     (function() {
         var isRunning = false;
@@ -22,12 +23,8 @@ def verify():
             var r = el.getBoundingClientRect();
             var x = r.left + r.width / 2;
             var y = r.top + r.height / 2;
-            
             ['touchstart', 'touchend', 'mousedown', 'mouseup', 'click'].forEach(function(type) {
-                el.dispatchEvent(new MouseEvent(type, {
-                    view: window, bubbles: true, cancelable: true,
-                    clientX: x, clientY: y
-                }));
+                el.dispatchEvent(new MouseEvent(type, { view: window, bubbles: true, cancelable: true, clientX: x, clientY: y }));
             });
         }
 
@@ -57,34 +54,33 @@ def verify():
 
             var currentQ = document.body.innerText.substring(0, 200).trim();
             var txt = document.body.innerText.substring(0, 2000).replace(/\n+/g, ' ').trim();
+            
+            // ШУКАЄМО ВСІ КЛІКАБЕЛЬНІ БЛОКИ
             var opts = [];
             var els = [];
-
+            
             document.querySelectorAll('div, span, label, button').forEach(function(el) {
+                // Перевіряємо, чи елемент має текст і чи він не є частиною питання
                 var t = el.innerText.trim();
-                if (t.length > 2 && t.length < 100 && !t.includes('Запитання') && !t.includes('Почати') && !t.includes('Добіжи') && !t.includes('LIVE') && !t.includes('Далі') && !t.includes('Завершити')) {
-                    if (/^[A-DА-Г]\s/.test(t)) {
-                        if (el.children.length === 0 || el.tagName === 'BUTTON' || el.tagName === 'LABEL') {
-                            if (!opts.includes(t)) {
-                                opts.push(t);
-                                els.push(el);
-                            }
+                if (t.length > 5 && t.length < 200 && !t.includes('Запитання') && !t.includes('Почати') && !t.includes('Добіжи') && !t.includes('LIVE') && !t.includes('Далі') && !t.includes('Завершити')) {
+                    // Перевіряємо, чи це блок, який можна натиснути (має обробник подій)
+                    if (el.onclick || el.tagName === 'BUTTON' || el.tagName === 'LABEL' || el.getAttribute('role') === 'button') {
+                        if (!opts.includes(t)) {
+                            opts.push(t);
+                            els.push(el);
                         }
                     }
                 }
             });
 
             if (opts.length === 0) {
+                // Якщо немає варіантів, шукаємо "Далі"
                 var nxt = Array.from(document.querySelectorAll('button, div, a')).find(el => {
                     var t = el.innerText.trim().toLowerCase();
                     return (t === 'далі' || t === 'наступне' || t === 'завершити' || t === 'продовжити');
                 });
-                if (nxt) {
-                    tap(nxt);
-                    setTimeout(loop, 2000);
-                } else {
-                    setTimeout(loop, 2000);
-                }
+                if (nxt) { tap(nxt); }
+                setTimeout(loop, 2000);
                 return;
             }
 
@@ -105,7 +101,7 @@ def verify():
                     try {
                         var data = JSON.parse(res.responseText);
                         if (data.error) {
-                            alert("Помилка OpenRouter: " + data.error.message);
+                            alert("Помилка ШІ: " + data.error.message);
                             isRunning = false;
                             return;
                         }
@@ -125,7 +121,7 @@ def verify():
                             if (newQ !== currentQ) {
                                 setTimeout(loop, 1000);
                             } else {
-                                loop();
+                                loop(); // Не вийшло, тиснемо ще раз
                             }
                         }, 1500);
 
