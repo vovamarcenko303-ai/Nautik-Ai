@@ -7,6 +7,7 @@ VALID_KEYS = [
     "VIP-2024",
     "MY-FRIEND",
     "TEST-123"
+    "admines-2376
 ]
 
 LOCKED_DEVICES = {}
