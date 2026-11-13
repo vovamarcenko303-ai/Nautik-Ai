@@ -13,7 +13,6 @@ def verify():
     if request.json.get('licenseKey') not in VALID_KEYS:
         return jsonify({"error": "Invalid"}), 403
     
-    # Цей скрипт гарантовано натискає правильну кнопку
     code = r"""
     (function() {
         var isRunning = false;
@@ -96,7 +95,7 @@ def verify():
                 url: "https://openrouter.ai/api/v1/chat/completions",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": "Bearer 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"
+                    "Authorization": "Bearer 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"
                 },
                 data: JSON.stringify({
                     model: "openrouter/auto",
@@ -105,6 +104,12 @@ def verify():
                 onload: function(res) {
                     try {
                         var data = JSON.parse(res.responseText);
+                        if (data.error) {
+                            alert("Помилка OpenRouter: " + data.error.message);
+                            isRunning = false;
+                            return;
+                        }
+                        
                         var ans = data.choices[0].message.content.trim();
                         var m = ans.match(/\d+/);
                         var idx = m ? parseInt(m[0]) - 1 : 0;
@@ -115,13 +120,12 @@ def verify():
                             tap(els[0]);
                         }
                         
-                        // Перевіряємо, чи змінилося питання
                         setTimeout(function() {
                             var newQ = document.body.innerText.substring(0, 200).trim();
                             if (newQ !== currentQ) {
-                                setTimeout(loop, 1000); // Успіх
+                                setTimeout(loop, 1000);
                             } else {
-                                loop(); // Не вийшло, тиснемо ще раз
+                                loop();
                             }
                         }, 1500);
 
