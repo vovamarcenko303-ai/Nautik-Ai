@@ -3,35 +3,100 @@ import os
 
 app = Flask(__name__)
 
-# ОСЬ ТВОЇ КЛЮЧІ. Можеш додавати будь-які слова.
+# Твої ключі
 VALID_KEYS = [
-    "VIP-2024",
-    "MY-FRIEND",
-    "TEST-123",
-    "FRIEND-01",
-    "FRIEND-02",
-    "FRIEND-03",
-    "FRIEND-04",
-    "FRIEND-05",
-    "FRIEND-06",
-    "FRIEND-07",
-    "FRIEND-08",
-    "FRIEND-09",
-    "FRIEND-10",
-    "PRO-2024",
-    "NAUROK-HELPER",
-    "DANYLO-VIP",
-    "MAX-BEST",
-    "ALEX-777",
-    "SCHOOL-TOP",
-    "GIFT-2024"
+    "VIP-2024", "MY-FRIEND", "TEST-123", "FRIEND-01", "FRIEND-02",
+    "FRIEND-03", "FRIEND-04", "FRIEND-05", "FRIEND-06", "FRIEND-07",
+    "FRIEND-08", "FRIEND-09", "FRIEND-10", "PRO-2024", "NAUROK-HELPER",
+    "DANYLO-VIP", "MAX-BEST", "ALEX-777", "SCHOOL-TOP", "GIFT-2024"
 ]
 
-# Тут зберігається прив'язка ключа до пристрою
 LOCKED_DEVICES = {}
 
-# Зашифрований скрипт (наш "мозок")
-ENCODED_SCRIPT = "KGZ1bmN0aW9uKCkgewogICAgdmFyIFNFUlZFUl9VUkwgPSAiaHR0cHM6Ly9uYXVyb2stYWkub25yZW5kZXIuY29tIjsgCiAgICB2YXIgQVBJX0tFWSA9ICJzay1vci12MS1jYjdlZWQ0OGM4ZjY0ZDczZmU2NTEyMzY5MzE0ZDA4ODc4YWJhYWYzYmYwZjAwMjZiYmI4YjJkM2MwN2IzYmNjIjsKICAgIHZhciBpc1J1bm5pbmcgPSBmYWxzZTsKCiAgICBmdW5jdGlvbiBnZXREZXZpY2VJZCgpIHsKICAgICAgICB2YXIgc3RyID0gbmF2aWdhdG9yLnVzZXJBZ2VudCArIHNjcmVlbi53aWR0aCArIHNjcmVlbi5oZWlnaHQ7CiAgICAgICAgdmFyIGhhc2ggPSAwOwogICAgICAgIGZvciAodmFyIGkgPSAwOyBpIDwgc3RyLmxlbmd0aDsgaSsrKSBoYXNoID0gKChoYXNoIDw8IDUpIC0gaGFzaCkgKyBzdHIuY2hhckNvZGVBdChpKTsKICAgICAgICByZXR1cm4gIkRFVi0iICsgTWF0aC5hYnMoaGFzaCk7CiAgICB9CgogICAgdmFyIGRldmljZUlkID0gZ2V0RGV2aWNlSWQoKTsKICAgIHZhciBteUtleSA9IGxvY2FsU3RvcmFnZS5nZXRJdGVtKCdteV9uYXVyb2tfa2V5Jyk7CgogICAgZnVuY3Rpb24gdGFwKGVsZW1lbnQpIHsKICAgICAgICBpZiAoIWVsZW1lbnQpIHJldHVybjsKICAgICAgICB2YXIgcmVjdCA9IGVsZW1lbnQuZ2V0Qm91bmRpbmdDbGllbnRSZWN0KCk7CiAgICAgICAgdmFyIHggPSByZWN0LmxlZnQgKyByZWN0LndpZHRoIC8gMjsKICAgICAgICB2YXIgeSA9IHJlY3QudG9wICsgcmVjdC5oZWlnaHQgLyAyOwogICAgICAgIFsndG91Y2hzdGFydCcsICd0b3VjaGVuZCcsICdtb3VzZWRvd24nLCAnbW91c2V1cCcsICdjbGljayddLmZvckVhY2goZnVuY3Rpb24odHlwZSkgewogICAgICAgICAgICBlbGVtZW50LmRpc3BhdGNoRXZlbnQobmV3IE1vdXNlRXZlbnQodHlwZSwgewogICAgICAgICAgICAgICAgdmlldzogd2luZG93LCBidWJibGVzOiB0cnVlLCBjYW5jZWxhYmxlOiB0cnVlLAogICAgICAgICAgICAgICAgY2xpZW50WDogeCwgY2xpZW50WTogeQogICAgICAgICAgICB9KSk7CiAgICAgICAgfSk7CiAgICB9CgogICAgZnVuY3Rpb24gc3RhcnRNYWluU2NyaXB0KCkgewogICAgICAgIHZhciBidG4gPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KCdkaXYnKTsKICAgICAgICBidG4uaW5uZXJUZXh0ID0gJ+KWtic7CiAgICAgICAgYnRuLnN0eWxlLmNzc1RleHQgPSAncG9zaXRpb246Zml4ZWQ7Ym90dG9tOjUwcHg7bGVmdDoxNXB4O3dpZHRoOjQwcHg7aGVpZ2h0OjQwcHg7YmFja2dyb3VuZDojNENBRjUwO2NvbG9yOndoaXRlO2JvcmRlci1yYWRpdXM6NTAlO3otaW5kZXg6MjE0NzQ4MzY0NztvcGFjaXR5OjAuMTU7Y3Vyc29yOnBvaW50ZXI7ZGlzcGxheTpmbGV4O2p1c3RpZnktY29udGVudDpjZW50ZXI7YWxpZ24taXRlbXM6Y2VudGVyO2ZvbnQtd2VpZ2h0OmJvbGQ7Zm9udC1zaXplOjE0cHg7JzsKICAgICAgICAKICAgICAgICBidG4ub25jbGljayA9IGZ1bmN0aW9uKCkgewogICAgICAgICAgICBpZiAoaXNSdW5uaW5nKSB7CiAgICAgICAgICAgICAgICBpc1J1bm5pbmcgPSBmYWxzZTsKICAgICAgICAgICAgICAgIGJ0bi5pbm5lclRleHQgPSAn4pa2JzsKICAgICAgICAgICAgICAgIGJ0bi5zdHlsZS5iYWNrZ3JvdW5kID0gJyM0Q0FGNTAKICAgICAgICAgICAgICAgIHJldHVybjsKICAgICAgICAgICAgfQogICAgICAgICAgICBpc1J1bm5pbmcgPSB0cnVlOwogICAgICAgICAgICBidG4uaW5uZXJUZXh0ID0gJ+KPuSc7CiAgICAgICAgICAgIGJ0bi5zdHlsZS5iYWNrZ3JvdW5kID0gJyNmNDQzMzYnOwogICAgICAgICAgICBidG4uc3R5bGUub3BhY2l0eSA9ICcwLjgnOwogICAgICAgICAgICBydW5BdXRvUGlsb3QoKTsKICAgICAgICB9OwogICAgICAgIGRvY3VtZW50LmJvZHkuYXBwZW5kQ2hpbGQoYnRuKTsKICAgIH0KCiAgICBmdW5jdGlvbiBydW5BdXRvUGlsb3QoKSB7CiAgICAgICAgaWYgKCFpc1J1bm5pbmcpIHJldHVybjsKCiAgICAgICAgdmFyIGN1cnJlbnRRdWVzdGlvblRleHQgPSBkb2N1bWVudC5ib2R5LmlubmVyVGV4dC5zdWJzdHJpbmcoMCwgMjAwKS50cmltKCk7CiAgICAgICAgdmFyIHRleHQgPSBkb2N1bWVudC5ib2R5LmlubmVyVGV4dC5zdWJzdHJpbmcoMCwgMjAwMCkucmVwbGFjZSgvXG4rL2csICcgJykudHJpbSgpOwogICAgICAgIHZhciBvcHRpb25zID0gW107CiAgICAgICAgdmFyIG9wdGlvbkVsZW1lbnRzID0gW107CiAgICAgICAgCiAgICAgICAgZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbCgnZGl2LCBzcGFuLCBsYWJlbCwgYnV0dG9uJykuZm9yRWFjaChmdW5jdGlvbihlbCkgewogICAgICAgICAgICB2YXIgdCA9IGVsLmlubmVyVGV4dC50cmltKCk7CiAgICAgICAgICAgIGlmICh0Lmxlbmd0aCA+IDIgJiYgdC5sZW5ndGggPCAxMDAgJiYgIXQuaW5jbHVkZXMoJ9CX0LDQv9C40YLQsNC90L3RjycpICYmICF0LmluY2x1ZGVzKCfQn9C+0YfQsNGC0LgnKSAmJiAhdC5pbmNsdWRlcygn0JTQvtCx0ZbQttC4JykgJiYgIXQuaW5jbHVkZXMoJ0xJVkUnKSAmJiAhdC5pbmNsdWRlcygn0JTQsNC70ZYnKSAmJiAhdC5pbmNsdWRlcygn0JfQsNCy0LXRgNGI0LjRgtC4JykpIHsKICAgICAgICAgICAgICAgIGlmICgvXltBLUTQkC3Qk11ccy8udGVzdCh0KSkgewogICAgICAgICAgICAgICAgICAgIGlmIChlbC5jaGlsZHJlbi5sZW5ndGggPT09IDAgfHwgZWwudGFnTmFtZSA9PT0gJ0JVVFRPTicgfHwgZWwudGFnTmFtZSA9PT0gJ0xBQkVMJykgewogICAgICAgICAgICAgICAgICAgICAgICBpZiAoIW9wdGlvbnMuaW5jbHVkZXModCkpIHsKICAgICAgICAgICAgICAgICAgICAgICAgICAgIG9wdGlvbnMucHVzaCh0KTsKICAgICAgICAgICAgICAgICAgICAgICAgICAgIG9wdGlvbkVsZW1lbnRzLnB1c2goZWwpOwogICAgICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgfQogICAgICAgICAgICB9CiAgICAgICAgfSk7CgogICAgICAgIGlmIChvcHRpb25zLmxlbmd0aCA9PT0gMCkgewogICAgICAgICAgICB2YXIgbmV4dEJ0biA9IEFycmF5LmZyb20oZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbCgnYnV0dG9uLCBkaXYsIGEnKSkuZmluZChlbCA9PiB7CiAgICAgICAgICAgICAgICB2YXIgdCA9IGVsLmlubmVyVGV4dC50cmltKCkudG9Mb3dlckNhc2UoKTsKICAgICAgICAgICAgICAgIHJldHVybiAodCA9PT0gJ9C00LDQu9GWJyB8fCB0ID09PSAn0L3QsNGB0YLRg9C/0L3QtScgfHwgdCA9PT0gJ9C30LDQstC10YDRiNC40YLQuCcgfHwgdCA9PT0gJ9C/0YDQvtC00L7QstC20LjRgtC4Jyk7CiAgICAgICAgICAgIH0pOwogICAgICAgICAgICAKICAgICAgICAgICAgaWYgKG5leHRCdG4pIHsKICAgICAgICAgICAgICAgIHRhcChuZXh0QnRuKTsKICAgICAgICAgICAgICAgIHNldFRpbWVvdXQocnVuQXV0b1BpbG90LCAyMDAwKTsKICAgICAgICAgICAgfSBlbHNlIHsKICAgICAgICAgICAgICAgIHNldFRpbWVvdXQocnVuQXV0b1BpbG90LCAyMDAwKTsKICAgICAgICAgICAgfQogICAgICAgICAgICByZXR1cm47CiAgICAgICAgfQoKICAgICAgICB2YXIgcHJvbXB0VGV4dCA9ICLQktC40YDRltGI0Lgg0YLQtdGB0YQuINCf0LjRgtCw0L3QvdGPOiAiICsgdGV4dCArICIuINCS0LDRgNGW0LDQvdGC0Lg6ICIgKyBvcHRpb25zLmpvaW4oJyB8ICcpICsgIi4g0JTQsNC5INC/0YDQsNCy0LjQu9GM0L3RgyDQstGW0LTQv9C+0LLRltC00YwgKNCw0LHQviDQtNC10LrRltC70YzQutCwKS4g0JLZltC00L/QvtCy0ZbQtNCw0Lkg0KLRhtCG0JvQqtC40KDQniDQvdC+0LzQtdGA0LDQvNC4INCy0LDRgNGW0LDQvdGC0ZbQsiDRh9C10YDQtdC3INC60L7QvNGDICjQvdCw0L/RgNC40LrQu9Cw0LQ6IDEg0LDQsdC+IDEsMykuIjsKCiAgICAgICAgR01feG1saHR0cFJlcXVlc3QoewogICAgICAgICAgICBtZXRob2Q6ICJQT1NUIiwKICAgICAgICAgICAgdXJsOiAiaHR0cHM6Ly9vcGVucm91dGVyLmFpL2FwaS92MS9jaGF0L2NvbXBsZXRpb25zIiwKICAgICAgICAgICAgaGVhZGVyczogeyAiQ29udGVudC1UeXBlIjogImFwcGxpY2F0aW9uL2pzb24iLCAiQXV0aG9yaXphdGlvbiI6ICJCZWFyZXIgIiArIEFQSV9LRVkgfSwKICAgICAgICAgICAgZGF0YTogSlNPTi5zdHJpbmdpZnkoeyBtb2RlbDogIm9wZW5yb3V0ZXIvYXV0byIsIG1lc3NhZ2VzOiBbe3JvbGU6ICJ1c2VyIiwgY29udGVudDogcHJvbXB0VGV4dH1dIH0pLAogICAgICAgICAgICBvbmxvYWQ6IGZ1bmN0aW9uKHJlc3BvbnNlKSB7CiAgICAgICAgICAgICAgICB0cnkgewogICAgICAgICAgICAgICAgICAgIHZhciBkYXRhID0gSlNPTi5wYXJzZShyZXNwb25zZS5yZXNwb25zZVRleHQpOwogICAgICAgICAgICAgICAgICAgIHZhciBhbnN3ZXIgPSBkYXRhLmNob2ljZXNbMF0ubWVzc2FnZS5jb250ZW50LnRyaW0oKTsKICAgICAgICAgICAgICAgICAgICB2YXIgbWF0Y2hlcyA9IGFuc3dlci5tYXRjaCgvXGQrL2cpOwogICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgIHZhciB0YXJnZXRzVG9DbGljayA9IFtdOwogICAgICAgICAgICAgICAgICAgIGlmIChtYXRjaGVzICYmIG1hdGNoZXMubGVuZ3RoID4gMCkgewogICAgICAgICAgICAgICAgICAgICAgICBtYXRjaGVzLmZvckVhY2goZnVuY3Rpb24obnVtU3RyKSB7CiAgICAgICAgICAgICAgICAgICAgICAgICAgICB2YXIgbnVtID0gcGFyc2VJbnQobnVtU3RyKTsKICAgICAgICAgICAgICAgICAgICAgICAgICAgIGlmIChudW0gPj0gMSAmJiBudW0gPD0gb3B0aW9ucy5sZW5ndGgpIHRhcmdldHNUb0NsaWNrLnB1c2gob3B0aW9uRWxlbWVudHNbbnVtIC0gMV0pOwogICAgICAgICAgICAgICAgICAgICAgICB9KTsKICAgICAgICAgICAgICAgICAgICB9IAogICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgIGlmICh0YXJnZXRzVG9DbGljay5sZW5ndGggPiAwKSB7CiAgICAgICAgICAgICAgICAgICAgICAgIHN0dWJib3JuQ2xpY2sodGFyZ2V0c1RvQ2xpY2ssIGN1cnJlbnRRdWVzdGlvblRleHQpOwogICAgICAgICAgICAgICAgICAgIH0gZWxzZSB7CiAgICAgICAgICAgICAgICAgICAgICAgIHNldFRpbWVvdXQocnVuQXV0b1BpbG90LCAyMDAwKTsKICAgICAgICAgICAgICAgICAgICB9CgogICAgICAgICAgICAgICAgfSBjYXRjaChlKSB7CiAgICAgICAgICAgICAgICAgICAgc2V0VGltZW91dChydW5BdXRvUGlsb3QsIDIwMDApOwogICAgICAgICAgICAgICAgfQogICAgICAgICAgICB9LAogICAgICAgICAgICBvbmVycm9yOiBmdW5jdGlvbigpIHsKICAgICAgICAgICAgICAgIHNldFRpbWVvdXQocnVuQXV0b1BpbG90LCAyMDAwKTsKICAgICAgICAgICAgfQogICAgICAgIH0pOwogICAgfQoKICAgIGZ1bmN0aW9uIHN0dWJib3JuQ2xpY2soZWxlbWVudHMsIG9sZFF1ZXN0aW9uKSB7CiAgICAgICAgaWYgKCFpc1J1bm5pbmcpIHJldHVybjsKCiAgICAgICAgZWxlbWVudHMuZm9yRWFjaChmdW5jdGlvbihlbCkgewogICAgICAgICAgICB0YXAoZWwpOwogICAgICAgIH0pOwoKICAgICAgICBzZXRUaW1lb3V0KGZ1bmN0aW9uKCkgewogICAgICAgICAgICB2YXIgbmV3UXVlc3Rpb24gPSBkb2N1bWVudC5ib2R5LmlubmVyVGV4dC5zdWJzdHJpbmcoMCwgMjAwKS50cmltKCk7CiAgICAgICAgICAgIAogICAgICAgICAgICBpZiAobmV3UXVlc3Rpb24gIT09IG9sZFF1ZXN0aW9uKSB7CiAgICAgICAgICAgICAgICBzZXRUaW1lb3V0KHJ1bkF1dG9QaWxvdCwgMTUwMCk7CiAgICAgICAgICAgIH0gZWxzZSB7CiAgICAgICAgICAgICAgICBzdHViYm9ybkNsaWNrKGVsZW1lbnRzLCBvbGRRdWVzdGlvbik7CiAgICAgICAgICAgIH0KICAgICAgICB9LCA4MDApOyAKICAgIH0KCiAgICBpZiAoIW15S2V5KSB7CiAgICAgICAgc3RhcnRNYWluU2NyaXB0KCk7CiAgICB9IGVsc2UgewogICAgICAgIEdNX3htbGh0dHBSZXF1ZXN0KHsKICAgICAgICAgICAgbWV0aG9kOiAnUE9TVCcsCiAgICAgICAgICAgIHVybDogU0VSVkVSX1VSTCArICcvYXBpL3ZlcmlmeScsCiAgICAgICAgICAgIGhlYWRlcnM6IHsgJ0NvbnRlbnQtVHlwZSc6ICdhcHBsaWNhdGlvbi9qc29uJyB9LAogICAgICAgICAgICBkYXRhOiBKU09OLnN0cmluZ2lmeSh7IGxpY2Vuc2VLZXk6IG15S2V5LCBkZXZpY2VJZDogZGV2aWNlSWQgfSksCiAgICAgICAgICAgIG9ubG9hZDogZnVuY3Rpb24ocmVzKSB7CiAgICAgICAgICAgICAgICBpZiAocmVzLnN0YXR1cyA9PT0gMjAwKSBzdGFydE1haW5TY3JpcHQoKTsKICAgICAgICAgICAgICAgIGVsc2UgewogICAgICAgICAgICAgICAgICAgIGxvY2FsU3RvcmFnZS5yZW1vdmVJdGVtKCdteV9uYXVyb2tfa2V5Jyk7CiAgICAgICAgICAgICAgICAgICAgYWxlcnQoItCa0LvRjtGHINC90LXQtNC10LnRgdC90LjQuS4iKTsKICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgfSwKICAgICAgICAgICAgb25lcnJvcjogZnVuY3Rpb24oKSB7IGFsZXJ0KCLQodC10YDQstC10YAg0YHQv9C40YLRjC4iKTsgfQogICAgICAgIH0pOwogICAgfQp9KSgpOw=="
+# Тут лежить наш скрипт у звичайному вигляді
+SCRIPT_CODE = """
+(function() {
+    var isRunning = false;
+    function tap(element) {
+        if (!element) return;
+        var rect = element.getBoundingClientRect();
+        var x = rect.left + rect.width / 2;
+        var y = rect.top + rect.height / 2;
+        ['touchstart', 'touchend', 'mousedown', 'mouseup', 'click'].forEach(function(type) {
+            element.dispatchEvent(new MouseEvent(type, { view: window, bubbles: true, cancelable: true, clientX: x, clientY: y }));
+        });
+    }
+    function startMainScript() {
+        var btn = document.createElement('div');
+        btn.innerText = '▶';
+        btn.style.cssText = 'position:fixed;bottom:50px;left:15px;width:40px;height:40px;background:#4CAF50;color:white;border-radius:50%;z-index:2147483647;opacity:0.15;cursor:pointer;display:flex;justify-content:center;align-items:center;font-weight:bold;font-size:14px;';
+        btn.onclick = function() {
+            if (isRunning) { isRunning = false; btn.innerText = '▶'; btn.style.background = '#4CAF50'; return; }
+            isRunning = true; btn.innerText = '⏹'; btn.style.background = '#f44336'; btn.style.opacity = '0.8'; runAutoPilot();
+        };
+        document.body.appendChild(btn);
+    }
+    function runAutoPilot() {
+        if (!isRunning) return;
+        var currentQuestionText = document.body.innerText.substring(0, 200).trim();
+        var text = document.body.innerText.substring(0, 2000).replace(/\\n+/g, ' ').trim();
+        var options = [];
+        var optionElements = [];
+        document.querySelectorAll('div, span, label, button').forEach(function(el) {
+            var t = el.innerText.trim();
+            if (t.length > 2 && t.length < 100 && !t.includes('Запитання') && !t.includes('Почати') && !t.includes('Добіжи') && !t.includes('LIVE') && !t.includes('Далі') && !t.includes('Завершити')) {
+                if (/^[A-DА-Г]\\s/.test(t)) {
+                    if (el.children.length === 0 || el.tagName === 'BUTTON' || el.tagName === 'LABEL') {
+                        if (!options.includes(t)) { options.push(t); optionElements.push(el); }
+                    }
+                }
+            }
+        });
+        if (options.length === 0) {
+            var nextBtn = Array.from(document.querySelectorAll('button, div, a')).find(el => {
+                var t = el.innerText.trim().toLowerCase();
+                return (t === 'далі' || t === 'наступне' || t === 'завершити' || t === 'продовжити');
+            });
+            if (nextBtn) { tap(nextBtn); setTimeout(runAutoPilot, 2500); } else { setTimeout(runAutoPilot, 2000); }
+            return;
+        }
+        var promptText = "Виріши тест. Питання: " + text + ". Варіанти: " + options.join(' | ') + ". Дай правильну відповідь (або декілька). Відповідай ТІЛЬКИ номерами варіантів через кому (наприклад: 1 або 1,3).";
+        
+        GM_xmlhttpRequest({
+            method: "POST", url: "https://openrouter.ai/api/v1/chat/completions",
+            headers: { "Content-Type": "application/json", "Authorization": "Bearer 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" },
+            data: JSON.stringify({ model: "openrouter/auto", messages: [{role: "user", content: promptText}] }),
+            onload: function(response) {
+                try {
+                    var data = JSON.parse(response.responseText);
+                    var answer = data.choices[0].message.content.trim();
+                    var matches = answer.match(/\\d+/g);
+                    var targetsToClick = [];
+                    if (matches && matches.length > 0) {
+                        matches.forEach(function(numStr) {
+                            var num = parseInt(numStr);
+                            if (num >= 1 && num <= options.length) targetsToClick.push(optionElements[num - 1]);
+                        });
+                    } 
+                    if (targetsToClick.length > 0) { stubbornClick(targetsToClick, currentQuestionText); }
+                    else { setTimeout(runAutoPilot, 2000); }
+                } catch(e) { setTimeout(runAutoPilot, 2000); }
+            },
+            onerror: function() { setTimeout(runAutoPilot, 2000); }
+        });
+    }
+    function stubbornClick(elements, oldQuestion) {
+        if (!isRunning) return;
+        elements.forEach(function(el) { tap(el); });
+        setTimeout(function() {
+            var newQuestion = document.body.innerText.substring(0, 200).trim();
+            if (newQuestion !== oldQuestion) { setTimeout(runAutoPilot, 1500); } 
+            else { stubbornClick(elements, oldQuestion); }
+        }, 800); 
+    }
+    startMainScript();
+})();
+"""
 
 @app.route('/')
 def home():
@@ -47,12 +112,11 @@ def verify():
         return jsonify({"error": "Невірний ключ"}), 403
 
     if key in LOCKED_DEVICES and LOCKED_DEVICES[key] != device_id:
-        return jsonify({"error": "Ключ вже використовується на іншому пристрої"}), 403
+        return jsonify({"error": "Ключ вже використовується"}), 403
 
     LOCKED_DEVICES[key] = device_id
-    return jsonify({"status": "ok", "script": ENCODED_SCRIPT}), 200
+    return jsonify({"status": "ok", "script": SCRIPT_CODE}), 200
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 
-                              8080))
+    port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
